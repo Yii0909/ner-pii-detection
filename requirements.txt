@@ -1,6 +1,15 @@
-transformers
-datasets
-seqeval
-torch
-accelerate
-streamlit
+accelerate                            1.15.0
+datasets                              4.8.5
+sentence-transformers                 5.7.0
+seqeval                               1.2.2
+tensorflow-datasets                   4.9.10
+torch                                 2.11.0+cu130
+torchao                               0.10.0
+torchaudio                            2.11.0+cu130
+torchcodec                            0.11.0+cu130
+torchdata                             0.11.0
+torchsummary                          1.5.1
+torchtune                             0.6.1
+torchvision                           0.26.0+cu130
+transformers                          5.20.2
+vega-datasets                         0.9.0
