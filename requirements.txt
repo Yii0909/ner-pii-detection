@@ -1,0 +1,6 @@
+transformers
+datasets
+seqeval
+torch
+accelerate
+streamlit
