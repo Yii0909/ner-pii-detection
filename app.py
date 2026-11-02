@@ -2,7 +2,7 @@ import html
 import streamlit as st
 from transformers import pipeline
 
-MODEL_ID = "YOUR_USERNAME/ner-malaysian"   # your Hugging Face model, or a local folder path
+MODEL_ID = "Yxian909/ner-malaysian"   # your Hugging Face model, or a local folder path
 KEEP = {"PER", "ORG", "LOC"}
 COLORS = {"PER": "#ffd54f", "ORG": "#81d4fa", "LOC": "#a5d6a7"}
 
