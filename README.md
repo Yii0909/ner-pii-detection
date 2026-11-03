@@ -4,7 +4,7 @@ AiROST Internship 2026/27 · ML/AI track · Problem 2: Personal Information Dete
 
 A fine-tuned DistilBERT model that reads raw text, finds **people (PER)**, **organisations (ORG)** and **locations (LOC)**, and returns a **redacted version** of the text. It is trained on the public CoNLL-2003 dataset plus a small self-written Malaysian dataset (Malay, English and mixed sentences).
 
-> Example (replace with a screenshot of your own app): `Nur Aisyah binti Ahmad studies at UTM in Johor Bahru.` → `[PER] studies at [ORG] in [LOC].`
+> Example: `Nur Aisyah binti Ahmad studies at UTM in Johor Bahru.` → `[PER] studies at [ORG] in [LOC].`
 
 ![App screenshot](screenshot/AppExample.png)
 
