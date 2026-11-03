@@ -93,8 +93,8 @@ To use a local model folder instead, change `MODEL_ID` at the top of `app.py`.
 
 Both notebooks were run on Google Colab with a free T4 GPU (Runtime → Change runtime type → T4 GPU).
 
-1. Open `01_baseline.ipynb` and run all cells. It trains the baseline model, evaluates it, and saves it as `ner-model`. Copy that folder to your Google Drive (`MyDrive/ner-model`).
-2. Open `02_malaysian.ipynb` and run the cells in order. It loads the baseline from `MyDrive/ner-model`, builds the Malaysian dataset, evaluates the baseline (before), retrains (after), and runs the evaluations above.
+1. Open `02_malaysian.ipynb` in Colab (T4 GPU) and run all cells. It loads the baseline model from Hugging Face (`Yxian909/ner-baseline`, trained in `01_baseline.ipynb`), evaluates it (before), retrains on the Malaysian data (after), and runs the evaluations above.
+2. To retrain the baseline yourself, run `01_baseline.ipynb` (it trains DistilBERT on CoNLL-2003, about 2 minutes on a T4 GPU). The optional upload cells need your own Hugging Face token.
 3. The last notebook cells that upload to Hugging Face are optional and need your own access token.
 
 A seed (42) is set, so results should be very close to the numbers above on the same library versions (see `requirements.txt`).
