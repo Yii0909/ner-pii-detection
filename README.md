@@ -15,6 +15,7 @@ A fine-tuned DistilBERT model that reads raw text, finds **people (PER)**, **org
 - Bonus 1: redacted output (each entity replaced by its type label)
 - Bonus 2: small labeled Malaysian dataset (242 training and 90 test sentences), used for training and evaluation
 - Fine-tuning process documented step by step in the notebooks
+- The Hugging Face `pipeline` function is used only as a wrapper to run my own fine-tuned model; the predictions come from the model I trained, not from a pre-built NER model.
 
 ## Results
 
@@ -76,6 +77,7 @@ The strict-set score is the most realistic estimate of how the model handles new
    ```bash
    pip install -r requirements.txt
    ```
+5. New to GitHub? This tutorial from the problem statement explains the basics: https://youtu.be/i_23KUAEtUM
 
 ## Run the app
 
@@ -93,9 +95,12 @@ To use a local model folder instead, change `MODEL_ID` at the top of `app.py`.
 
 Both notebooks were run on Google Colab with a free T4 GPU (Runtime → Change runtime type → T4 GPU).
 
-1. Open `02_malaysian.ipynb` in Colab (T4 GPU) and run all cells. It loads the baseline model from Hugging Face (`Yxian909/ner-baseline`, trained in `01_baseline.ipynb`), evaluates it (before), retrains on the Malaysian data (after), and runs the evaluations above.
-2. To retrain the baseline yourself, run `01_baseline.ipynb` (it trains DistilBERT on CoNLL-2003, about 2 minutes on a T4 GPU). The optional upload cells need your own Hugging Face token.
-3. The last notebook cells that upload to Hugging Face are optional and need your own access token.
+1. Open `02_malaysian.ipynb` in Colab (T4 GPU) and run all cells. It loads the baseline model from Hugging Face
+   ([`Yxian909/ner-baseline`](https://huggingface.co/Yxian909/ner-baseline), trained in `01_baseline.ipynb`),
+   evaluates it (before), retrains on the Malaysian data (after), and runs the evaluations above.
+2. To retrain the baseline yourself, run `01_baseline.ipynb` (about 2 minutes on a T4 GPU).
+3. The cells that upload models to Hugging Face are switched off by default (`PUSH_TO_HUB = False`).
+   Turn them on only if you want to upload your own copy, and use your own token and repo names.
 
 A seed (42) is set, so results should be very close to the numbers above on the same library versions (see `requirements.txt`).
 
@@ -113,7 +118,7 @@ A seed (42) is set, so results should be very close to the numbers above on the 
 - They are written by me and by contributors, in English, Malay and mixed language, using made-up names or well-known public figures and places. Events, programmes and dates are not labeled.
 - Some sentences have no entities on purpose, so the model learns not to tag every capitalised word.
 - Train and test sentences are separate, and no sentence appears in both.
-- Contributors: (add first names, with permission)
+- No sentence appears in both sets, but some common entities (for example "Kuching") appear in both, which is why the strict-set result below is the more realistic one.
 
 ## Limitations
 
