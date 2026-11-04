@@ -1,16 +1,20 @@
 import html
 import streamlit as st
+from pypdf import PdfReader
 from transformers import pipeline
 
-MODEL_ID = "Yxian909/ner-malaysian"   # your Hugging Face model, or a local folder path
+MODEL_ID = "Yxian909/ner-malaysian"
 KEEP = {"PER", "ORG", "LOC"}
 COLORS = {"PER": "#ffd54f", "ORG": "#81d4fa", "LOC": "#a5d6a7"}
+MAX_CHARS = 100_000   # keeps long documents fast enough on a laptop
+MAX_PAGES = 30
 
 
 @st.cache_resource
 def load_model():
+    # stride lets the pipeline process texts longer than the model's 512-token limit
     return pipeline("token-classification", model=MODEL_ID,
-                    aggregation_strategy="first")
+                    aggregation_strategy="first", stride=32)
 
 
 def detect(ner, text):
@@ -51,19 +55,60 @@ def highlight(text, ents):
     return out.replace("\n", "<br>")
 
 
-st.set_page_config(page_title="PII Detector", page_icon="🔍")
-st.title("Personal Information Detector")
-st.caption("Finds people (PER), organisations (ORG) and locations (LOC) "
-           "with a fine-tuned DistilBERT model, and redacts them.")
+def read_file(uploaded):
+    """Extract plain text from a .txt or .pdf upload (extraction only; detection is our own model)."""
+    name = uploaded.name.lower()
+    if name.endswith(".txt"):
+        return uploaded.read().decode("utf-8", errors="replace")
+    if name.endswith(".pdf"):
+        reader = PdfReader(uploaded)
+        pages = reader.pages[:MAX_PAGES]
+        return "\n".join((p.extract_text() or "") for p in pages)
+    return ""
 
-example = "Nur Aisyah binti Ahmad studies at UTM in Johor Bahru."
-text = st.text_area("Paste or type text", value=example, height=180)
 
-if st.button("Detect") and text.strip():
+def analyse(text):
+    if len(text) > MAX_CHARS:
+        st.warning(f"The text is long, so only the first {MAX_CHARS:,} characters are analysed.")
+        text = text[:MAX_CHARS]
     with st.spinner("Loading model and analysing..."):
         ner = load_model()
         ents = detect(ner, text)
+    st.session_state["result"] = {"text": text, "ents": ents}
 
+
+st.set_page_config(page_title="PII Detector", page_icon="🔍")
+st.title("Personal Information Detector")
+st.caption("Finds people (PER), organisations (ORG) and locations (LOC) "
+           "with a fine-tuned DistilBERT model, and redacts them. "
+           "Uploaded files are processed in memory and are not saved.")
+
+tab_text, tab_file = st.tabs(["Type or paste text", "Upload a file (.txt / .pdf)"])
+
+with tab_text:
+    typed = st.text_area("Paste or type text", height=180,
+                         value="Nur Aisyah binti Ahmad studies at UTM in Johor Bahru.")
+    if st.button("Detect", key="detect_text") and typed.strip():
+        analyse(typed)
+
+with tab_file:
+    uploaded = st.file_uploader("Choose a .txt or .pdf file", type=["txt", "pdf"])
+    if st.button("Detect in file", key="detect_file") and uploaded is not None:
+        try:
+            file_text = read_file(uploaded)
+        except Exception as err:
+            file_text = ""
+            st.error(f"Could not read this file: {err}")
+        if file_text.strip():
+            analyse(file_text)
+        elif not file_text:
+            pass
+        else:
+            st.warning("No text found in this file. Scanned PDFs (images) need OCR, which this app does not do.")
+
+result = st.session_state.get("result")
+if result:
+    text, ents = result["text"], result["ents"]
     st.subheader("Detected entities")
     if ents:
         st.markdown(highlight(text, ents), unsafe_allow_html=True)
@@ -75,5 +120,8 @@ if st.button("Detect") and text.strip():
     else:
         st.info("No people, organisations or locations found.")
 
+    redacted = redact(text, ents)
     st.subheader("Redacted text")
-    st.code(redact(text, ents), language=None)
+    st.code(redacted, language=None)
+    st.download_button("Download redacted text (.txt)", data=redacted,
+                       file_name="redacted.txt", mime="text/plain")
