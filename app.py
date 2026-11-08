@@ -1,4 +1,5 @@
 import html
+import re
 import streamlit as st
 from pypdf import PdfReader
 from transformers import pipeline
@@ -18,20 +19,52 @@ def load_model():
 
 
 def detect(ner, text):
-    """Run the model, keep PER/ORG/LOC, and join neighbouring entities of the same type."""
-    ents = [e for e in ner(text) if e["entity_group"] in KEEP]
-    merged = []
-    for e in ents:
-        if (merged and merged[-1]["entity_group"] == e["entity_group"]
-                and e["start"] - merged[-1]["end"] <= 1):
-            merged[-1]["end"] = e["end"]
-        else:
-            merged.append({"entity_group": e["entity_group"],
-                           "start": e["start"], "end": e["end"],
-                           "score": float(e["score"])})
-    for m in merged:
-        m["word"] = text[m["start"]:m["end"]]
-    return merged
+    ABBREV = {"dr", "prof", "encik", "puan", "cik", "datuk", "tun", "sdn", "bhd", "mr", "mrs", "ms"}
+    
+    def split_sentences(text):
+        """(start, end) of sentence-like chunks; offsets refer to the original text."""
+        spans, start = [], 0
+        for m in re.finditer(r"[.!?]+\s+|\n+", text):
+            before = text[start:m.start()].split()
+            last = before[-1].lower().rstrip(".") if before else ""
+            if m.group().strip() and last in ABBREV:
+                continue
+            if text[start:m.end()].strip():
+                spans.append((start, m.end()))
+            start = m.end()
+        if text[start:].strip():
+            spans.append((start, len(text)))
+        return spans
+    
+    def prep(chunk):
+        """Title-case ALL-CAPS headings for the model only (same length, so offsets stay valid)."""
+        letters = [c for c in chunk if c.isalpha()]
+        if len(letters) >= 12 and all(c.isupper() for c in letters):
+            return chunk.title()
+        return chunk
+    
+    def detect(ner, text):
+        ents = []
+        for s, e in split_sentences(text):
+            for x in ner(prep(text[s:e])):
+                if x["entity_group"] in KEEP:
+                    ents.append({"entity_group": x["entity_group"],
+                                 "start": x["start"] + s, "end": x["end"] + s,
+                                 "score": float(x["score"])})
+        # join entities separated only by a space (fixes "Pulau" + "Pinang" splits)
+        merged = []
+        for e in sorted(ents, key=lambda z: z["start"]):
+            if merged and text[merged[-1]["end"]:e["start"]].strip() == "" \
+                    and e["start"] - merged[-1]["end"] <= 1:
+                prev = merged[-1]
+                if e["score"] > prev["score"]:
+                    prev["entity_group"] = e["entity_group"]
+                prev["end"], prev["score"] = e["end"], max(prev["score"], e["score"])
+            else:
+                merged.append(dict(e))
+        for m in merged:
+            m["word"] = text[m["start"]:m["end"]]
+        return merged
 
 
 def redact(text, ents):
