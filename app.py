@@ -9,6 +9,8 @@ KEEP = {"PER", "ORG", "LOC"}
 COLORS = {"PER": "#ffd54f", "ORG": "#81d4fa", "LOC": "#a5d6a7"}
 MAX_CHARS = 100_000   # keeps long documents fast enough on a laptop
 MAX_PAGES = 30
+# titles/abbreviations that end with a full stop but do not end a sentence
+ABBREV = {"dr", "prof", "encik", "puan", "cik", "datuk", "tun", "sdn", "bhd", "mr", "mrs", "ms"}
 
 
 @st.cache_resource
@@ -18,53 +20,53 @@ def load_model():
                     aggregation_strategy="first", stride=32)
 
 
+def split_sentences(text):
+    """(start, end) of sentence-like chunks; offsets refer to the original text."""
+    spans, start = [], 0
+    for m in re.finditer(r"[.!?]+\s+|\n+", text):
+        before = text[start:m.start()].split()
+        last = before[-1].lower().rstrip(".") if before else ""
+        if m.group().strip() and last in ABBREV:
+            continue
+        if text[start:m.end()].strip():
+            spans.append((start, m.end()))
+        start = m.end()
+    if text[start:].strip():
+        spans.append((start, len(text)))
+    return spans
+
+
+def prep(chunk):
+    """Title-case ALL-CAPS headings for the model only (same length, so offsets stay valid)."""
+    letters = [c for c in chunk if c.isalpha()]
+    if len(letters) >= 12 and all(c.isupper() for c in letters):
+        return chunk.title()
+    return chunk
+
+
 def detect(ner, text):
-    ABBREV = {"dr", "prof", "encik", "puan", "cik", "datuk", "tun", "sdn", "bhd", "mr", "mrs", "ms"}
-    
-    def split_sentences(text):
-        """(start, end) of sentence-like chunks; offsets refer to the original text."""
-        spans, start = [], 0
-        for m in re.finditer(r"[.!?]+\s+|\n+", text):
-            before = text[start:m.start()].split()
-            last = before[-1].lower().rstrip(".") if before else ""
-            if m.group().strip() and last in ABBREV:
-                continue
-            if text[start:m.end()].strip():
-                spans.append((start, m.end()))
-            start = m.end()
-        if text[start:].strip():
-            spans.append((start, len(text)))
-        return spans
-    
-    def prep(chunk):
-        """Title-case ALL-CAPS headings for the model only (same length, so offsets stay valid)."""
-        letters = [c for c in chunk if c.isalpha()]
-        if len(letters) >= 12 and all(c.isupper() for c in letters):
-            return chunk.title()
-        return chunk
-    
-    def detect(ner, text):
-        ents = []
-        for s, e in split_sentences(text):
-            for x in ner(prep(text[s:e])):
-                if x["entity_group"] in KEEP:
-                    ents.append({"entity_group": x["entity_group"],
-                                 "start": x["start"] + s, "end": x["end"] + s,
-                                 "score": float(x["score"])})
-        # join entities separated only by a space (fixes "Pulau" + "Pinang" splits)
-        merged = []
-        for e in sorted(ents, key=lambda z: z["start"]):
-            if merged and text[merged[-1]["end"]:e["start"]].strip() == "" \
-                    and e["start"] - merged[-1]["end"] <= 1:
-                prev = merged[-1]
-                if e["score"] > prev["score"]:
-                    prev["entity_group"] = e["entity_group"]
-                prev["end"], prev["score"] = e["end"], max(prev["score"], e["score"])
-            else:
-                merged.append(dict(e))
-        for m in merged:
-            m["word"] = text[m["start"]:m["end"]]
-        return merged
+    """Run the model sentence by sentence, keep PER/ORG/LOC, and join split entities."""
+    ents = []
+    for s, e in split_sentences(text):
+        for x in ner(prep(text[s:e])):
+            if x["entity_group"] in KEEP:
+                ents.append({"entity_group": x["entity_group"],
+                             "start": x["start"] + s, "end": x["end"] + s,
+                             "score": float(x["score"])})
+    # join entities separated only by a space (fixes "Pulau" + "Pinang" splits)
+    merged = []
+    for e in sorted(ents, key=lambda z: z["start"]):
+        if (merged and text[merged[-1]["end"]:e["start"]].strip() == ""
+                and e["start"] - merged[-1]["end"] <= 1):
+            prev = merged[-1]
+            if e["score"] > prev["score"]:
+                prev["entity_group"] = e["entity_group"]
+            prev["end"], prev["score"] = e["end"], max(prev["score"], e["score"])
+        else:
+            merged.append(dict(e))
+    for m in merged:
+        m["word"] = text[m["start"]:m["end"]]
+    return merged
 
 
 def redact(text, ents):
@@ -127,17 +129,17 @@ with tab_text:
 with tab_file:
     uploaded = st.file_uploader("Choose a .txt or .pdf file", type=["txt", "pdf"])
     if st.button("Detect in file", key="detect_file") and uploaded is not None:
+        file_text, failed = "", False
         try:
             file_text = read_file(uploaded)
         except Exception as err:
-            file_text = ""
+            failed = True
             st.error(f"Could not read this file: {err}")
         if file_text.strip():
             analyse(file_text)
-        elif not file_text:
-            pass
-        else:
-            st.warning("No text found in this file. Scanned PDFs (images) need OCR, which this app does not do.")
+        elif not failed:
+            st.warning("No text found in this file. Scanned PDFs (images) need OCR, "
+                       "which this app does not do.")
 
 result = st.session_state.get("result")
 if result:
