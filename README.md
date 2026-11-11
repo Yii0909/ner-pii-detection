@@ -6,7 +6,7 @@ A fine-tuned DistilBERT model that reads raw text, finds **people (PER)**, **org
 
 > Example: `Nur Aisyah binti Ahmad studies at UTM in Johor Bahru.` → `[PER] studies at [ORG] in [LOC].`
 
-![App screenshot](screenshot/AppExample.png)
+![App screenshot](screenshot/AppExampleRun4.png)
 
 ## Features
 
