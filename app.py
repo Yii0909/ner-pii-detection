@@ -147,11 +147,11 @@ if result:
     st.subheader("Detected entities")
     if ents:
         st.markdown(highlight(text, ents), unsafe_allow_html=True)
-        st.dataframe(
-            [{"Text": e["word"], "Type": e["entity_group"],
-              "Confidence": round(e["score"], 3)} for e in ents],
-            use_container_width=True,
-        )
+                rows = ["| Text | Type | Confidence |", "|---|---|---|"]
+        for e in ents:
+            word = e["word"].replace("|", "\\|").replace("\n", " ")
+            rows.append(f"| {word} | {e['entity_group']} | {e['score']:.3f} |")
+        st.markdown("\n".join(rows))
     else:
         st.info("No people, organisations or locations found.")
 
