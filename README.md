@@ -38,6 +38,12 @@ Harder checks on the Malaysian test set (baseline → final model):
 
 The strict-set score is the most realistic estimate of how the model handles new Malaysian names. CoNLL-2003 F1 stayed the same, so the Malaysian training did not make the model forget international text.
 
+**Article-style corpus (development set):** I also ran the app on a 26 KB bilingual article corpus (English and Malay, about 600
+entities) and compared the redacted output with the original by hand. Obvious errors (common words or fragments tagged as
+entities, places given the wrong type, people that are not people) fell from about 29% of tagged spans for the first app
+version to about 3% for the final model and app (a lower bound; the true error rate is probably around 5%). Because I added
+training data after inspecting this corpus's errors, it is a development set and these numbers are optimistic.
+
 ### Before and after on example sentences
 
 | Sentence | Baseline | Final model |
@@ -111,6 +117,9 @@ A seed (42) is set, so results should be very close to the numbers above on the 
 - **Malaysian training:** the baseline is trained further for 3 epochs (same settings) on 4,000 random CoNLL sentences plus the Malaysian training sentences repeated 10 times. The CoNLL sentences stop the model forgetting international text.
 - **Evaluation:** entity-level precision, recall and F1 with `seqeval`.
 - **Redaction:** each detected entity is replaced with its type label, and neighbouring entities of the same type are merged.
+- **Redaction pipeline around the model:** long text is split into sentences (the model was trained on single sentences),
+  ALL-CAPS heading lines are converted to title case for the model only (offsets are unchanged), and neighbouring
+  fragments such as "Pulau" + "Pinang" are merged into one entity. The predictions themselves always come from my own model.
 
 ## Malaysian dataset
 
@@ -125,6 +134,9 @@ A seed (42) is set, so results should be very close to the numbers above on the 
 - The Malaysian dataset is small and self-written, and the test sentences are in a similar style to the training sentences, so real-world accuracy is likely lower than 0.965.
 - Run 3 data was chosen after inspecting errors on the test set, so its test score is slightly optimistic. A fresh test set written by other people would give a fairer estimate.
 - Remaining misses on unseen entities include long Malay organisation names (for example "Majlis Daerah Mukah", "Lembaga Hasil Dalam Negeri"), some titles and name formats ("a/p"), and some single-word names.
+- Brand names that resemble surnames or place names (for example "Ramly", "Mydin") are sometimes tagged as people.
+- "Malaysia" inside Malay noun phrases (for example "pemain badminton Malaysia") is sometimes tagged as an organisation.
+- A few entities are still missed at the start of sentences, such as "Penang".
 - Capitalised unfamiliar words can be tagged as names, and the confidence score is not reliable (wrong labels can show 0.99).
 - Only people, organisations and locations are detected. Other personal information such as phone numbers, emails and ID numbers is not detected.
 - Do not rely on this tool alone to remove personal data from real documents.
