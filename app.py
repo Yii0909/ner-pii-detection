@@ -147,7 +147,7 @@ if result:
     st.subheader("Detected entities")
     if ents:
         st.markdown(highlight(text, ents), unsafe_allow_html=True)
-                rows = ["| Text | Type | Confidence |", "|---|---|---|"]
+        rows = ["| Text | Type | Confidence |", "|---|---|---|"]
         for e in ents:
             word = e["word"].replace("|", "\\|").replace("\n", " ")
             rows.append(f"| {word} | {e['entity_group']} | {e['score']:.3f} |")
