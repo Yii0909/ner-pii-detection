@@ -179,6 +179,7 @@ A seed (42) is set, so results should be very close to the numbers above on the 
 - Brand names that resemble surnames or place names (for example "Ramly", "Mydin") are sometimes tagged as people.
 - "Malaysia" inside Malay noun phrases (for example "pemain badminton Malaysia") is sometimes tagged as an organisation.
 - A few entities are still missed at the start of sentences, such as "Penang".
+- The model relies on capitalisation. It was fine-tuned on properly cased text only, so text written in all lower case (for example chat messages or social media posts) is detected much less reliably. People names' such as "Wednesday" is not detected, while names such as "Apple", "Cherry" are able to be tagged as people.
 - Capitalised unfamiliar words can be tagged as names, and the confidence score is not reliable (wrong labels can show 0.99).
 - PDFs must contain real text. Scanned PDFs (images) need OCR, which is not supported.
 - Only people, organisations and locations are detected. Other personal information such as phone numbers, emails and ID numbers is not detected.
@@ -189,6 +190,7 @@ A seed (42) is set, so results should be very close to the numbers above on the 
 - Test on sentences written by other people, and grow the Malaysian dataset
 - A from-scratch model (for example BiLSTM-CRF) to compare with the fine-tuned model
 - OCR for scanned PDFs, and detection of other personal information (phone numbers, emails, ID numbers)
+- Add lowercase and mixed-case copies of part of the training data, and compare cased and lowercase F1 to see whether capitalisation robustness improves without hurting cased accuracy.
 
 ## License
  
