@@ -2,11 +2,21 @@
 
 AiROST Internship 2026/27 · ML/AI track · Problem 2: Personal Information Detection in Text
 
+By Yii · [GitHub](https://github.com/Yii0909) · [Project page](https://yii0909.github.io/ner-pii-detection/) · [Final model](https://huggingface.co/Yxian909/ner-malaysian) · [Baseline model](https://huggingface.co/Yxian909/ner-baseline)
+
 A fine-tuned DistilBERT model that reads raw text, finds **people (PER)**, **organisations (ORG)** and **locations (LOC)**, and returns a **redacted version** of the text. It is trained on the public CoNLL-2003 dataset plus a small self-written Malaysian dataset (Malay, English and mixed sentences).
 
 > Example: `Nur Aisyah binti Ahmad studies at UTM in Johor Bahru.` → `[PER] studies at [ORG] in [LOC].`
 
-![App screenshot](screenshot/AppExampleRun4.png)
+## Summary
+ 
+- **Headline result:** on a fresh test set of 41 sentences (72 entities) never used for training or tuning, entity-level F1 rose from **0.562 (baseline) to 0.874 (final model)**.
+- **No forgetting:** on the CoNLL-2003 test set the final model scores 0.884 against 0.886 for the baseline, so it still handles international text.
+- **Caveat:** the fresh set is small, so 0.874 could move by several points on a different sample. See [Limitations](#limitations).
+- **What you get:** a trained model, a Streamlit app (paste text or upload `.txt` / `.pdf`, highlighted entities with confidence scores, downloadable redacted text), and notebooks documenting every training run.
+  
+![App Screenshot](screenshot/AppExampleRun4.png)
+![File Upload Tab](screenshot/FileUpload.png)
 
 ## Features
 
@@ -31,6 +41,7 @@ The final model (Run 4) was continued from a CoNLL-2003 baseline and trained on 
 | CoNLL-2003 test, F1 | 0.886 | 0.884 |
 
 - **The fresh test set is the most reliable number** (precision 0.857, recall 0.892). It uses names, places and organisations that are not in the training data, and it was never used for training or tuning.
+- **It is still a small sample.** With only 72 entities, a handful of extra hits or misses changes the score noticeably, so read 0.874 as "roughly 0.85 to 0.90", not as an exact figure.
 - The 90-sentence set is a **development set**: I chose training sentences after inspecting its errors, so its score is optimistic.
 - CoNLL-2003 F1 stayed the same, so the Malaysian training did not make the model forget international text.
 - Scores vary by a few points between runs (for example, deleting one training line moved the fresh-test F1 from 0.899 to 0.874). Treat differences below about 0.03 as noise.
@@ -68,14 +79,22 @@ The true error rate is probably around 5%. Because I added training data after i
 | `Giant dan Tesco menawarkan diskaun besar.` | Tesco → PER, Giant missed | Giant → ORG, Tesco → ORG |
 | `Sila hantar borang sebelum hari Jumaat.` | Sila → PER, Jumaat → PER | no entities |
 
+## What I learned
+ 
+- **A good score on data I tuned against means little.** My development set scored 0.954, but the fresh set I never touched scored 0.874. The gap showed me how easily I can fit my own test data without noticing.
+- **Small differences are noise.** Deleting a single training line moved the fresh-test F1 from 0.899 to 0.874, so I stopped treating tiny changes between runs as real improvements.
+- **Mixing in the original data matters.** Adding 4,000 CoNLL sentences while training on Malaysian text kept international performance at 0.884, instead of letting the model drift toward only my small dataset.
+- **Sentences with no entities are useful training data.** Without them the model tagged words like "Sila" and "Jumaat" as people just because they were capitalised.
+  
 ## Repository contents
 
 ```
 .
 ├── 01_baseline.ipynb        # Fine-tune DistilBERT on CoNLL-2003 (Run 1)
-├── 02_malaysian.ipynb       # Malaysian dataset, retraining, evaluation (Runs 2 and 4)
+├── 02_malaysian.ipynb       # Malaysian dataset, retraining, evaluation (Runs 2 to 4)
 ├── app.py                   # Streamlit app (detection + redaction + file upload)
 ├── requirements.txt         # Python dependencies
+├── LICENSE                  # MIT licence
 ├── data/
 │   ├── malaysian_train.txt       # 371 labeled training sentences
 │   ├── malaysian_test.txt        # 90 labeled test sentences
@@ -108,7 +127,8 @@ The true error rate is probably around 5%. Because I added training data after i
 The trained model is hosted on Hugging Face at [`Yxian909/ner-malaysian`](https://huggingface.co/Yxian909/ner-malaysian), so you do not need to train anything to try it.
 
 ```bash
-py -m streamlit run app.py
+streamlit run app.py             # macOS / Linux
+py -m streamlit run app.py       # Windows  
 ```
 
 A browser tab opens at `http://localhost:8501`. The first run downloads the model (about 260 MB), so you need an internet connection.
@@ -169,6 +189,10 @@ A seed (42) is set, so results should be very close to the numbers above on the 
 - Test on sentences written by other people, and grow the Malaysian dataset
 - A from-scratch model (for example BiLSTM-CRF) to compare with the fine-tuned model
 - OCR for scanned PDFs, and detection of other personal information (phone numbers, emails, ID numbers)
+
+## License
+ 
+Released under the [MIT License](LICENSE). Copyright (c) 2026 Yii.
 
 ## Acknowledgements
 
