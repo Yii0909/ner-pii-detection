@@ -16,7 +16,9 @@ A fine-tuned DistilBERT model that reads raw text, finds **people (PER)**, **org
 - **What you get:** a trained model, a Streamlit app (paste text or upload `.txt` / `.pdf`, highlighted entities with confidence scores, downloadable redacted text), and notebooks documenting every training run.
   
 ![App Screenshot](screenshot/AppExampleRun4.png)
-![File Upload Tab](screenshot/FileUpload.png)
+![File Upload Tab](screenshot/FileUpload01.png)
+![File Upload Tab](screenshot/FileUpload02.png)
+![File Upload Tab](screenshot/FileUpload03.png)
 
 ## Features
 
